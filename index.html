@@ -199,19 +199,28 @@ const CATEGORIES=[
   ]},
 ];
 
+const DISCOUNT_STEPS=[{min:0,max:2,pct:0},{min:3,max:5,pct:20},{min:6,max:8,pct:30},{min:9,max:99,pct:35}];
 const PRAZO=[
   {label:'Mensal',months:1,pct:0,note:'Contrato de 4 meses'},
-  {label:'Trimestral',months:3,pct:33.5},
-  {label:'Semestral',months:6,pct:40.5},
-  {label:'Anual',months:12,pct:47.5},
+  {label:'Trimestral',months:3,pct:5},
+  {label:'Semestral',months:6,pct:15},
+  {label:'Anual',months:12,pct:25},
 ];
 
 let selected={},fechamentoAtivo=false,units={};
 
+function getDiscount(c){for(let s of DISCOUNT_STEPS)if(c>=s.min&&c<=s.max)return s.pct;return 0;}
 function fmt(n){return 'R$ '+n.toLocaleString('pt-BR');}
 function isFree(svc){return svc.freeWith&&selected[svc.freeWith];}
 function getBasePrice(svc){if(svc.price===null)return null;if(isFree(svc))return 0;return svc.price;}
 function getUnits(id){return units[id]||1;}
+
+function getRecorrCount(){
+  return Object.keys(selected).filter(function(id){
+    const svc=selected[id];const p=getBasePrice(svc);
+    return !svc.oneTime&&p!==0&&p!==null;
+  }).length;
+}
 
 // Calcula subtotal dos outros serviços recorrentes (excluindo o serviço atual)
 function getSubtotalSemSvc(excludeId){
@@ -241,14 +250,18 @@ function getPrice(svc){
   return svc.price;
 }
 
-function calcTotals(){
+function calcTotals(prazoMonths){
+  const rc=getRecorrCount();
+  // Desconto de volume só se não for mensal
+  const discount=(prazoMonths===1)?0:getDiscount(rc);
   let subtotal=0,subtotalOneTime=0,freeCount=0;
   Object.keys(selected).forEach(function(id){
     const svc=selected[id];const p=getPrice(svc);
     if(p===null)return;if(p===0){freeCount++;return;}
     if(svc.oneTime)subtotalOneTime+=p;else subtotal+=p;
   });
-  return{subtotal,subtotalOneTime,freeCount,total:subtotal+subtotalOneTime,count:Object.keys(selected).length};
+  const discountAmt=Math.round(subtotal*discount/100);
+  return{subtotal,subtotalOneTime,freeCount,discountAmt,total:(subtotal-discountAmt)+subtotalOneTime,count:Object.keys(selected).length};
 }
 
 function buildServices(){
@@ -287,7 +300,7 @@ function toggleService(svc){
 }
 
 function updateCart(){
-  const t=calcTotals();
+  const t=calcTotals(1);
   let itemsHTML='';
   Object.keys(selected).forEach(function(id){
     const svc=selected[id];const n=svc.hasUnits?getUnits(id):1;
@@ -311,7 +324,7 @@ function clearAll(){
 
 function openModal(){
   const client=document.getElementById('client-name').value||'Lead';
-  const t=calcTotals();
+  const t=calcTotals(1); // mensal = sem desconto de volume
   let iHTML='';
   Object.keys(selected).forEach(function(id){
     const svc=selected[id];const price=getPrice(svc);const n=svc.hasUnits?getUnits(id):1;
@@ -363,12 +376,12 @@ function syncFechamentoUI(){
 }
 function buildPrazoCards(){
   const grid=document.getElementById('prazo-grid');grid.innerHTML='';
-  const t=calcTotals();
   PRAZO.forEach(function(p){
+    const t=calcTotals(p.months);
     const dp=p.pct,df=fechamentoAtivo?15:0;
-    const mensalRecorr=Math.round(t.subtotal*(1-dp/100)*(1-df/100));
+    const mensalRecorr=Math.round((t.subtotal-t.discountAmt)*(1-dp/100)*(1-df/100));
     const mensal=mensalRecorr;
-    const base=t.subtotal;
+    const base=t.subtotal; // sem desconto de volume do mensal, para cálculo de economia
     const totalP=Math.round(mensal*p.months);const eco=Math.round((base*p.months)-totalP);
     const totalOneTime=t.subtotalOneTime;
     const ft=p.months===6;
@@ -394,7 +407,7 @@ function closeModal(){document.getElementById('modal').classList.remove('open');
 
 function gerarPDF(){
   const client=document.getElementById('client-name').value||'Lead';
-  const t=calcTotals();const data=new Date().toLocaleDateString('pt-BR');
+  const t=calcTotals(1);const data=new Date().toLocaleDateString('pt-BR');
   let sRows='';
   Object.keys(selected).forEach(function(id){
     const svc=selected[id];const price=getPrice(svc);const n=svc.hasUnits?getUnits(id):1;
@@ -414,10 +427,11 @@ function gerarPDF(){
   tRows+='<tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;color:#111;border-top:2px solid #111">Total</td><td style="padding:10px 0 0;font-size:20px;font-weight:800;color:#C72825;text-align:right;border-top:2px solid #111">'+fmt(t.total)+'</td></tr>';
   let pCards='';
   PRAZO.forEach(function(p){
+    const tp=calcTotals(p.months);
     const dp=p.pct,df=fechamentoAtivo?15:0;
-    const mensalRecorr=Math.round(t.subtotal*(1-dp/100)*(1-df/100));
+    const mensalRecorr=Math.round((tp.subtotal-tp.discountAmt)*(1-dp/100)*(1-df/100));
     const mensal=mensalRecorr;
-    const totalP=Math.round(mensal*p.months);const eco=Math.round((t.subtotal*p.months)-totalP);const ft=p.months===6;
+    const totalP=Math.round(mensal*p.months);const eco=Math.round((tp.subtotal*p.months)-totalP);const ft=p.months===6;
     pCards+='<td style="padding:0 5px;vertical-align:top;width:25%"><div style="background:'+(ft?'#fff5f5':'#f9f9f9')+';border:'+(ft?'2px solid #C72825':'1px solid #e5e5e5')+';border-radius:10px;padding:12px;text-align:center">';
     pCards+='<div style="font-size:11px;font-weight:700;color:'+(ft?'#C72825':'#888')+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+p.label+'</div>';
     if(p.months>1){
