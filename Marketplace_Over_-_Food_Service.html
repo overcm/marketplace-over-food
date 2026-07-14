@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Over — Monte seu plano</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#f1f1f1;height:100vh;overflow:hidden;font-size:16px}
+.top-bar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;height:56px}
+.client-area{display:flex;align-items:center;gap:10px}
+.client-label{font-size:15px;color:#555}
+.client-input{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:15px;padding:7px 12px;width:210px;outline:none}
+.client-input:focus{border-color:#C72825}
+.layout{display:grid;grid-template-columns:1fr 360px;height:calc(100vh - 56px)}
+.services-panel{overflow-y:auto;padding:22px}
+.panel-title{font-size:14px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:18px}
+.category{margin-bottom:28px}
+.cat-label{font-size:13px;font-weight:700;color:#C72825;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e1e1e}
+.services-grid{display:flex;flex-direction:column;gap:8px}
+.service-card{background:#1a1a1a;border:1px solid #222;border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:12px;user-select:none}
+.service-card:hover{border-color:#333;background:#1e1e1e}
+.service-card.selected{border-color:#C72825;background:#1e0a0a}
+.check-box{width:20px;height:20px;border-radius:5px;border:1.5px solid #333;flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.service-card.selected .check-box{background:#C72825;border-color:#C72825}
+.check-icon{display:none;color:#fff;font-size:13px;font-weight:700}
+.service-card.selected .check-icon{display:block}
+.svc-name{font-size:16px;font-weight:600;color:#e8e8e8;margin-bottom:3px;line-height:1.3}
+.svc-desc{font-size:13px;color:#555;line-height:1.5}
+.svc-note{font-size:12px;color:#555;font-style:italic;margin-top:4px}
+.svc-sob{font-size:12px;color:#888;font-style:italic;margin-top:4px}
+.cart-panel{background:#111;border-left:2px solid #2a2a2a;display:flex;flex-direction:column;overflow:hidden}
+.cart-header{padding:18px 20px;border-bottom:1px solid #1e1e1e;flex-shrink:0}
+.cart-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.cart-title{font-size:13px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.8px}
+.cart-pill{background:#C72825;color:#fff;border-radius:20px;font-size:13px;font-weight:700;padding:3px 12px}
+.cart-total-label{font-size:13px;color:#555;margin-top:2px}
+.discount-section{padding:14px 20px;border-bottom:1px solid #1e1e1e;flex-shrink:0}
+.discount-track{display:flex;gap:4px;margin-bottom:6px}
+.discount-step{flex:1;height:4px;border-radius:2px;background:#222;transition:background .3s}
+.discount-step.active{background:#C72825}
+.discount-labels{display:flex;justify-content:space-between}
+.discount-label{font-size:11px;color:#444;text-align:center}
+.discount-label.active{color:#C72825;font-weight:700}
+.discount-badge{display:inline-flex;align-items:center;gap:5px;background:#C7282520;border:1px solid #C7282540;border-radius:20px;padding:4px 12px;font-size:13px;color:#C72825;font-weight:700;margin-top:8px}
+.cart-items{flex:1;overflow-y:auto;padding:12px 20px}
+.cart-empty{text-align:center;padding:30px 10px;color:#333;font-size:15px}
+.cart-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid #1e1e1e}
+.cart-item:last-child{border:none}
+.cart-item-dot{width:6px;height:6px;border-radius:50%;background:#C72825;flex-shrink:0}
+.cart-item-name{flex:1;font-size:15px;color:#bbb;line-height:1.3}
+.cart-item-remove{background:none;border:none;color:#333;cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0}
+.cart-item-remove:hover{color:#C72825}
+.cart-actions{padding:14px 20px;border-top:1px solid #1e1e1e;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.btn-generate{background:#C72825;border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:700;padding:14px;cursor:pointer;width:100%}
+.btn-generate:hover{opacity:.88}
+.btn-generate:disabled{background:#222;color:#444;cursor:not-allowed}
+.btn-clear{background:none;border:1px solid #222;border-radius:8px;color:#555;font-size:14px;font-weight:600;padding:10px;cursor:pointer;width:100%}
+.btn-clear:hover{border-color:#333;color:#888}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center;padding:40px}
+.modal-overlay.open{display:flex}
+.modal{background:#111;border:1px solid #2a2a2a;border-radius:16px;padding:28px;width:640px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.modal-sub{font-size:15px;color:#666;margin-bottom:20px}
+.modal-items{display:flex;flex-direction:column;margin-bottom:14px}
+.modal-item{display:flex;justify-content:space-between;font-size:15px;padding:10px 0;border-bottom:.5px solid #1e1e1e;color:#ccc}
+.modal-item:last-child{border:none}
+.modal-totals{margin-bottom:16px}
+.modal-row{display:flex;justify-content:space-between;font-size:15px;margin-bottom:7px;color:#888}
+.modal-row.disc{color:#C72825}
+.modal-row.eco{color:#4ade80}
+.modal-row.final{color:#fff;font-weight:700;font-size:18px;margin-bottom:0;padding-top:10px;border-top:.5px solid #252525}
+.modal-row.final span:last-child{color:#C72825;font-size:22px}
+.modal-btn{width:100%;padding:13px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;border:1px solid #222;background:#1e1e1e;color:#888;margin-bottom:8px}
+.modal-btn:hover{background:#252525}
+.modal-btn:last-child{margin-bottom:0}
+#print-area{display:none}
+</style>
+</head>
+<body>
+<div id="print-area"></div>
+<div class="top-bar">
+  <div style="display:flex;align-items:center">
+    <img src="https://i.imgur.com/gEYFUQu.png" style="height:32px;width:auto">
+  </div>
+  <div class="client-area">
+    <span class="client-label">Lead:</span>
+    <input class="client-input" id="client-name" placeholder="Nome do cliente...">
+  </div>
+</div>
+<div class="layout">
+  <div class="services-panel">
+    <div class="panel-title">Monte o plano do cliente</div>
+    <div id="services-container"></div>
+  </div>
+  <div class="cart-panel">
+    <div class="cart-header">
+      <div class="cart-header-top">
+        <span class="cart-title">Projeto selecionado</span>
+        <span class="cart-pill" id="cart-pill">0 serviços</span>
+      </div>
+      <div class="cart-total-label">Serviços adicionados</div>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <div class="cart-empty">Selecione os serviços ao lado</div>
+    </div>
+    <div class="cart-actions">
+      <button class="btn-generate" id="btn-generate" disabled onclick="openModal()">Gerar resumo do projeto</button>
+      <button class="btn-clear" onclick="clearAll()">Limpar seleção</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-items" id="modal-items"></div>
+    <div id="modal-totals"></div>
+    <button id="btn-ver-prazo" class="modal-btn" style="background:#C72825;color:#fff;border-color:#C72825" onclick="togglePrazo()">Formatos de investimento ▼</button>
+    <div id="modal-prazo-section" style="display:none;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">Opções de prazo</div>
+      <div id="fechamento-btn" onclick="toggleFechamento()" style="display:flex;align-items:center;gap:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:13px 14px;cursor:pointer;margin-bottom:8px;user-select:none">
+        <div id="fechamento-check" style="width:20px;height:20px;border-radius:5px;border:1.5px solid #333;flex-shrink:0;display:flex;align-items:center;justify-content:center"></div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;color:#e8e8e8">Fechamento na Reunião</div>
+          <div style="font-size:13px;color:#666;margin-top:2px">+15% de desconto em todas as modalidades ao fechar hoje</div>
+        </div>
+        <div id="fechamento-badge" style="display:none;background:#C7282520;border:1px solid #C7282540;border-radius:20px;padding:3px 10px;font-size:13px;color:#C72825;font-weight:700">-15%</div>
+      </div>
+      <div id="onetime-box" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:13px 14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#e8e8e8" id="onetime-label">Pagamento único</div>
+            <div style="font-size:12px;color:#666;margin-top:2px">Cobrado uma única vez, à parte da mensalidade</div>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:#C72825" id="onetime-value"></div>
+        </div>
+      </div>
+      <div id="prazo-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
+      <div style="background:#1a1a1a;border:.5px solid #2a2a2a;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Formas de pagamento</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:#111;border:.5px solid #2a2a2a;color:#ccc;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px">Pix integral</span>
+          <span style="background:#111;border:.5px solid #2a2a2a;color:#ccc;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px">Cartão</span>
+          <span style="background:#111;border:.5px solid #2a2a2a;color:#ccc;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px">Pix + Cartão</span>
+        </div>
+      </div>
+      <button onclick="gerarPDF()" class="modal-btn" style="background:transparent;color:#C72825;border-color:#C72825">Exportar PDF da proposta</button>
+    </div>
+    <button class="modal-btn" onclick="closeModal()">Fechar</button>
+  </div>
+</div>
+<script>
+const CATEGORIES=[
+  {label:"Tráfego e Anúncios",services:[
+    {id:"trafego",name:"Gestão de Tráfego Pago",desc:"Facebook, Instagram e Google Ads com gestão baseada em histórico e dados reais.",price:1450,bundlePrice:1190,bundleNote:"Cai para R$ 1.190 quando o projeto total ultrapassar R$ 2.000"},
+    {id:"gmn",name:"Estruturação e Avaliação de Google Meu Negócio",desc:"Otimização completa do perfil, estratégia de avaliações e posicionamento local.",price:300},
+  ]},
+  {label:"iFood e Marketplaces",services:[
+    {id:"marketplace-todos",name:"Gestão de Marketplace (todos)",desc:"Gestão completa de todos os aplicativos de delivery simultaneamente.",price:1250},
+    {id:"marketplace-principais",name:"Gestão de Marketplace (iFood, 99Food, Keeta e etc)",desc:"Gestão completa dos principais aplicativos de delivery.",price:850},
+  ]},
+  {label:"Cardápio e Conversão",services:[
+    {id:"cardapio",name:"Engenharia de Cardápio",desc:"Histórico de vendas, lucratividade por item, comportamento do cliente e estética.",price:600,bundlePrice:300,bundleNote:"Cai para R$ 300 quando o projeto total ultrapassar R$ 2.000"},
+    {id:"oferta",name:"Engenharia de Oferta e Funil",desc:"Reestrutura como seu produto é apresentado para aumentar conversão e ticket médio.",price:500,freeWith:"cardapio",freeNote:"Gratuito ao adicionar Engenharia de Cardápio"},
+  ]},
+  {label:"Conteúdo e Posicionamento",services:[
+    {id:"social-media",name:"Social Media",desc:"Gestão completa das redes sociais — planejamento, criação e publicação de conteúdos.",price:750},
+    {id:"conteudo",name:"Assessoria de Conteúdo",desc:"Roteiro, referências e ideias de conteúdo para posicionar seu negócio.",price:450},
+    {id:"sazonais",name:"Ações de Marketing Sazonais",desc:"Estratégias para datas comemorativas e períodos sazonais.",price:350},
+    {id:"design",name:"Design Gráfico",desc:"Criação de até 20 peças visuais por mês para redes sociais, campanhas e materiais da marca.",price:450},
+    {id:"edicao",name:"Edição de Vídeos",desc:"Edição de até 10 vídeos por mês para redes sociais e campanhas digitais.",price:450},
+    {id:"ia-fotos",name:"IA de Melhoria de Fotos",desc:"Melhoria de até 30 imagens por mês com inteligência artificial.",price:250},
+  ]},
+  {label:"CRM, Dados e IA",services:[
+    {id:"crm",name:"CRM e Inteligência de Dados",desc:"Recuperar inativos, aumentar LTV e reduzir dependência dos apps.",price:790},
+    {id:"agente-ia",name:"Agente de IA",desc:"IA atendendo clientes 24h — dúvidas, compras e reservas.",price:null,priceNote:"Sob análise — valor conforme necessidade"},
+  ]},
+  {label:"Consultoria e Gestão",services:[
+    {id:"estruturacao",name:"Estruturação Estratégica",desc:"Raio-X completo do negócio. Identifica gargalos e onde você está deixando dinheiro na mesa.",price:6900,oneTime:true},
+    {id:"financeiro",name:"Estrutura de Custos e Precificação",desc:"Leitura, melhoria de margens e lucratividade do negócio.",price:500,oneTime:true},
+    {id:"planejamento",name:"Planejamento Mensal Estratégico",desc:"Previsibilidade de cada ação durante todo o contrato.",price:300},
+    {id:"gestor-fin",name:"Gestor Financeiro",desc:"Acompanhamento financeiro dedicado — controle de caixa, margens e lucratividade.",price:1700},
+    {id:"ficha-tecnica",name:"Planilha Ficha Técnica",desc:"Planilha estruturada para controle e padronização das fichas técnicas dos produtos.",price:350,oneTime:true},
+    {id:"precificacao-ifood",name:"Planilha Precificação do iFood",desc:"Planilha para precificação estratégica dos produtos no iFood, considerando taxas e margem.",price:350,oneTime:true},
+    {id:"landing-page",name:"Landing Page",desc:"Criação de página de alta conversão para campanhas, captação de leads e vendas.",price:700,unitPrice:700,extraUnitPrice:350,hasUnits:true,oneTime:true},
+  ]},
+];
+
+const DISCOUNT_STEPS=[{min:0,max:2,pct:0},{min:3,max:5,pct:20},{min:6,max:8,pct:30},{min:9,max:99,pct:35}];
+const STEPS_DISPLAY=[{label:"1-2",pct:"0%"},{label:"3-5",pct:"20%"},{label:"6-8",pct:"30%"},{label:"9+",pct:"35%"}];
+const PRAZO=[
+  {label:'Mensal',months:1,pct:0,note:'Contrato de 4 meses'},
+  {label:'Trimestral',months:3,pct:33.5},
+  {label:'Semestral',months:6,pct:40.5},
+  {label:'Anual',months:12,pct:47.5},
+];
+
+let selected={},fechamentoAtivo=false,units={};
+
+function getDiscount(c){for(let s of DISCOUNT_STEPS)if(c>=s.min&&c<=s.max)return s.pct;return 0;}
+function fmt(n){return 'R$ '+n.toLocaleString('pt-BR');}
+function isFree(svc){return svc.freeWith&&selected[svc.freeWith];}
+
+function getRecorrCount(){
+  return Object.keys(selected).filter(function(id){
+    const svc=selected[id];const p=getBasePrice(svc);
+    return !svc.oneTime&&p!==0&&p!==null;
+  }).length;
+}
+function getBasePrice(svc){if(svc.price===null)return null;if(isFree(svc))return 0;return svc.price;}
+function getUnits(id){return units[id]||1;}
+
+// Calcula subtotal dos outros serviços recorrentes (excluindo o serviço atual)
+function getSubtotalSemSvc(excludeId){
+  let sub=0;
+  Object.keys(selected).forEach(function(id){
+    if(id===excludeId)return;
+    const svc=selected[id];
+    if(svc.oneTime||isFree(svc))return;
+    const p=svc.price;
+    if(p===null||p===0)return;
+    if(svc.hasUnits){sub+=svc.unitPrice+(getUnits(id)>1?(getUnits(id)-1)*svc.extraUnitPrice:0);}
+    else sub+=p;
+  });
+  return sub;
+}
+
+function getPrice(svc){
+  if(svc.price===null)return null;
+  if(isFree(svc))return 0;
+  if(svc.hasUnits){const n=getUnits(svc.id);return svc.unitPrice+(n>1?(n-1)*svc.extraUnitPrice:0);}
+  // bundlePrice: ativa quando subtotal dos outros serviços > R$2.000
+  if(svc.bundlePrice){
+    const outrosSub=getSubtotalSemSvc(svc.id);
+    if(outrosSub>2000)return svc.bundlePrice;
+    return svc.price;
+  }
+  return svc.price;
+}
+
+function calcTotals(prazoMonths){
+  const rc=getRecorrCount();
+  // Desconto de volume só se não for mensal
+  const discount=(prazoMonths===1)?0:getDiscount(rc);
+  let subtotal=0,subtotalOneTime=0,freeCount=0;
+  Object.keys(selected).forEach(function(id){
+    const svc=selected[id];const p=getPrice(svc);
+    if(p===null)return;if(p===0){freeCount++;return;}
+    if(svc.oneTime)subtotalOneTime+=p;else subtotal+=p;
+  });
+  const discountAmt=Math.round(subtotal*discount/100);
+  return{subtotal,subtotalOneTime,freeCount,discount,discountAmt,total:(subtotal-discountAmt)+subtotalOneTime,count:Object.keys(selected).length,recorrCount:rc};
+}
+
+function buildServices(){
+  const container=document.getElementById('services-container');
+  CATEGORIES.forEach(function(cat){
+    const catDiv=document.createElement('div');catDiv.className='category';
+    catDiv.innerHTML='<div class="cat-label">'+cat.label+'</div>';
+    const grid=document.createElement('div');grid.className='services-grid';
+    cat.services.forEach(function(svc){
+      const card=document.createElement('div');card.className='service-card';card.id='card-'+svc.id;
+      let extra='';
+      if(svc.price===null) extra='<div class="svc-sob">'+svc.priceNote+'</div>';
+      if(svc.freeNote) extra+='<div class="svc-note">'+svc.freeNote+'</div>';
+      if(svc.hasUnits) extra+='<div style="font-size:15px;font-weight:700;color:#e8e8e8;margin-top:6px">'+fmt(svc.unitPrice)+'<span style="font-size:12px;font-weight:400;color:#555"> /unidade</span> <span style="font-size:12px;color:#555">· 2ª em diante: '+fmt(svc.extraUnitPrice)+'</span></div><div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span style="font-size:12px;color:#555">Unidades:</span><button onclick="event.stopPropagation();changeUnits(\''+svc.id+'\',-1)" style="width:26px;height:26px;border-radius:6px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:14px">−</button><span id="units-'+svc.id+'" style="font-size:15px;font-weight:700;color:#fff;min-width:20px;text-align:center">1</span><button onclick="event.stopPropagation();changeUnits(\''+svc.id+'\',1)" style="width:26px;height:26px;border-radius:6px;border:1px solid #333;background:#111;color:#fff;cursor:pointer;font-size:14px">+</button></div>';
+      card.innerHTML='<div class="check-box"><span class="check-icon">✓</span></div><div style="flex:1"><div class="svc-name">'+svc.name+'</div><div class="svc-desc">'+svc.desc+'</div>'+extra+'</div>';
+      card.onclick=function(){toggleService(svc);};
+      grid.appendChild(card);
+    });
+    catDiv.appendChild(grid);container.appendChild(catDiv);
+  });
+}
+
+function findSvc(id){for(let c of CATEGORIES)for(let s of c.services)if(s.id===id)return s;return null;}
+
+function changeUnits(id,delta){
+  const svc=findSvc(id);if(!svc)return;
+  const nxt=Math.max(1,(units[id]||1)+delta);
+  units[id]=nxt;document.getElementById('units-'+id).textContent=nxt;
+  if(selected[id])updateCart();
+}
+
+function toggleService(svc){
+  if(selected[svc.id]){delete selected[svc.id];document.getElementById('card-'+svc.id).classList.remove('selected');}
+  else{selected[svc.id]=svc;document.getElementById('card-'+svc.id).classList.add('selected');}
+  updateCart();
+}
+
+function updateCart(){
+  const t=calcTotals(1);
+  let itemsHTML='';
+  Object.keys(selected).forEach(function(id){
+    const svc=selected[id];const n=svc.hasUnits?getUnits(id):1;
+    const label=svc.name+(n>1?' ×'+n:'');
+    itemsHTML+='<div class="cart-item"><div class="cart-item-dot"></div><div class="cart-item-name">'+label+'</div><button class="cart-item-remove" onclick="removeItem(\''+id+'\')">×</button></div>';
+  });
+  document.getElementById('cart-items').innerHTML=t.count===0?'<div class="cart-empty">Selecione os serviços ao lado</div>':itemsHTML;
+  document.getElementById('cart-pill').textContent=t.count+(t.count===1?' serviço':' serviços');
+  document.getElementById('btn-generate').disabled=t.count===0;
+}
+
+
+
+function removeItem(id){
+  delete selected[id];document.getElementById('card-'+id).classList.remove('selected');updateCart();
+}
+function clearAll(){
+  Object.keys(selected).forEach(function(id){delete selected[id];const c=document.getElementById('card-'+id);if(c)c.classList.remove('selected');});
+  updateCart();
+}
+
+function openModal(){
+  const client=document.getElementById('client-name').value||'Lead';
+  const t=calcTotals(1); // mensal = sem desconto de volume
+  let iHTML='';
+  Object.keys(selected).forEach(function(id){
+    const svc=selected[id];const price=getPrice(svc);const n=svc.hasUnits?getUnits(id):1;
+    const lbl=svc.name+(n>1?' ×'+n:'');
+    if(price===null) iHTML+='<div class="modal-item"><span>'+lbl+'</span></div>';
+    else iHTML+='<div class="modal-item"><span>'+lbl+'</span>'+(price===0?'<span style="color:#4ade80;font-size:13px">Gratuito</span>':'')+'</div>';
+  });
+  let tHTML='';
+  document.getElementById('modal-title').textContent='Projeto '+client;
+  document.getElementById('modal-sub').textContent=t.count+' serviço'+(t.count>1?'s':'')+' selecionado'+(t.count>1?'s':'');
+  document.getElementById('modal-items').innerHTML=iHTML;
+  document.getElementById('modal-totals').innerHTML=tHTML;
+  document.getElementById('modal-prazo-section').style.display='none';
+  document.getElementById('btn-ver-prazo').textContent='Formatos de investimento ▼';
+  fechamentoAtivo=false;syncFechamentoUI();
+  document.getElementById('modal').classList.add('open');
+  // Caixa de pagamento único
+  const onetimeBox=document.getElementById('onetime-box');
+  if(t.subtotalOneTime>0){
+    // Montar lista de itens únicos
+    const onetimeItems=[];
+    Object.keys(selected).forEach(function(id){
+      const svc=selected[id];if(!svc.oneTime)return;
+      const p=getPrice(svc);if(!p)return;
+      const n=svc.hasUnits?getUnits(id):1;
+      onetimeItems.push(svc.name+(n>1?' ×'+n:'')+': '+fmt(p));
+    });
+    document.getElementById('onetime-label').textContent=onetimeItems.length===1?onetimeItems[0].split(':')[0]:'Pagamentos únicos';
+    document.getElementById('onetime-value').textContent=fmt(t.subtotalOneTime);
+    onetimeBox.style.display='block';
+  } else {
+    onetimeBox.style.display='none';
+  }
+  buildPrazoCards();
+}
+
+function togglePrazo(){
+  const sec=document.getElementById('modal-prazo-section');const open=sec.style.display==='block';
+  sec.style.display=open?'none':'block';
+  document.getElementById('btn-ver-prazo').textContent=open?'Formatos de investimento ▼':'Fechar formatos de investimento ▲';
+}
+function toggleFechamento(){fechamentoAtivo=!fechamentoAtivo;syncFechamentoUI();buildPrazoCards();}
+function syncFechamentoUI(){
+  const btn=document.getElementById('fechamento-btn');const check=document.getElementById('fechamento-check');const badge=document.getElementById('fechamento-badge');
+  btn.style.borderColor=fechamentoAtivo?'#C72825':'#2a2a2a';btn.style.background=fechamentoAtivo?'#1e0a0a':'#1a1a1a';
+  check.style.background=fechamentoAtivo?'#C72825':'transparent';check.style.borderColor=fechamentoAtivo?'#C72825':'#333';
+  check.innerHTML=fechamentoAtivo?'<span style="color:#fff;font-size:13px;font-weight:700">✓</span>':'';
+  badge.style.display=fechamentoAtivo?'block':'none';
+}
+function buildPrazoCards(){
+  const grid=document.getElementById('prazo-grid');grid.innerHTML='';
+  PRAZO.forEach(function(p){
+    const t=calcTotals(p.months);
+    const dp=p.pct,df=fechamentoAtivo?15:0;
+    const mensalRecorr=Math.round((t.subtotal-t.discountAmt)*(1-dp/100)*(1-df/100));
+    const mensal=mensalRecorr;
+    const base=t.subtotal; // sem desconto de volume do mensal, para cálculo de economia
+    const totalP=Math.round(mensal*p.months);const eco=Math.round((base*p.months)-totalP);
+    const totalOneTime=t.subtotalOneTime;
+    const ft=p.months===6;
+    const card=document.createElement('div');
+    card.style.cssText='background:'+(ft?'#1e0a0a':'#1a1a1a')+';border:'+(ft?'2px solid #C72825':'.5px solid #252525')+';border-radius:10px;padding:14px;position:relative';
+    let inn=ft?'<div style="position:absolute;top:-10px;left:12px;background:#C72825;color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px">MAIS POPULAR</div>':'';
+    inn+='<div style="font-size:12px;font-weight:700;color:'+(ft?'#C72825':'#888')+';text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">'+p.label+'</div>';
+    if(p.months>1){
+      inn+='<div style="font-size:20px;font-weight:800;color:#fff">'+fmt(totalP)+'</div>';
+      inn+='<div style="font-size:12px;color:#555;margin-bottom:2px">total do período</div>';
+      inn+='<div style="font-size:14px;font-weight:600;color:#aaa">'+fmt(mensal)+'<span style="font-size:11px;font-weight:400;color:#555">/mês</span></div>';
+    } else {
+      inn+='<div style="font-size:20px;font-weight:800;color:#fff">'+fmt(mensalRecorr)+'<span style="font-size:12px;font-weight:400;color:#555">/mês</span></div>';
+    }
+    if(dp>0||df>0){/* percentual não exibido */}
+    else inn+='<div style="font-size:12px;color:#888;margin-top:4px">'+(p.note||'')+'</div>';
+    inn+='<div style="margin-top:10px;padding-top:10px;border-top:.5px solid #252525">';
+    if(eco>0)inn+='<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:#4ade80">Economia</span><span style="color:#4ade80;font-weight:700">'+fmt(eco)+'</span></div>';
+    inn+='</div>';card.innerHTML=inn;grid.appendChild(card);
+  });
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+function gerarPDF(){
+  const client=document.getElementById('client-name').value||'Lead';
+  const t=calcTotals(1);const data=new Date().toLocaleDateString('pt-BR');
+  let sRows='';
+  Object.keys(selected).forEach(function(id){
+    const svc=selected[id];const price=getPrice(svc);const n=svc.hasUnits?getUnits(id):1;
+    const lbl=svc.name+(n>1?' ×'+n:'');
+    const ps=price===null?'Sob análise':price===0?'Gratuito':fmt(price)+(svc.oneTime?' único':'/mês')+(svc.bundlePrice&&price===svc.bundlePrice?' <span style="font-size:12px;color:#aaa;text-decoration:line-through">'+fmt(svc.price)+'</span>':'');
+    sRows+='<tr><td style="padding:9px 12px;font-size:14px;color:#333;border-bottom:1px solid #f0f0f0">'+lbl+'</td><td style="padding:9px 12px;font-size:14px;font-weight:600;color:'+(price===0?'#2d9e5f':'#111')+';text-align:right;border-bottom:1px solid #f0f0f0;white-space:nowrap">'+ps+'</td></tr>';
+  });
+  // Se tráfego selecionado, adiciona gratuitos automaticamente no PDF
+  if(selected['trafego']){
+    sRows+='<tr><td style="padding:9px 12px;font-size:14px;color:#333;border-bottom:1px solid #f0f0f0">Configuração de Inteligência de Dados</td><td style="padding:9px 12px;font-size:14px;font-weight:600;color:#2d9e5f;text-align:right;border-bottom:1px solid #f0f0f0">Gratuito</td></tr>';
+    sRows+='<tr><td style="padding:9px 12px;font-size:14px;color:#333;border-bottom:1px solid #f0f0f0">Planejamento Tático de Growth</td><td style="padding:9px 12px;font-size:14px;font-weight:600;color:#2d9e5f;text-align:right;border-bottom:1px solid #f0f0f0">Gratuito</td></tr>';
+  }
+  let tRows='<tr><td style="padding:7px 0;font-size:14px;color:#666">Subtotal mensal</td><td style="padding:7px 0;font-size:14px;color:#333;text-align:right">'+fmt(t.subtotal)+'/mês</td></tr>';
+  if(t.subtotalOneTime>0)tRows+='<tr><td style="padding:7px 0;font-size:14px;color:#666">Pagamento único</td><td style="padding:7px 0;font-size:14px;color:#333;text-align:right">'+fmt(t.subtotalOneTime)+'</td></tr>';
+  const extraFree=selected['trafego']?2:0;
+  if(t.freeCount+extraFree>0)tRows+='<tr><td style="padding:7px 0;font-size:14px;color:#2d9e5f">'+(t.freeCount+extraFree)+' serviço'+((t.freeCount+extraFree)>1?'s':'')+' gratuito'+((t.freeCount+extraFree)>1?'s':'')+'</td><td style="padding:7px 0;font-size:14px;color:#2d9e5f;text-align:right">R$ 0</td></tr>';
+  // Desconto de volume não aparece no mensal
+  tRows+='<tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;color:#111;border-top:2px solid #111">Total</td><td style="padding:10px 0 0;font-size:20px;font-weight:800;color:#C72825;text-align:right;border-top:2px solid #111">'+fmt(t.total)+'</td></tr>';
+  let pCards='';
+  PRAZO.forEach(function(p){
+    const tp=calcTotals(p.months);
+    const dp=p.pct,df=fechamentoAtivo?15:0;
+    const mensalRecorr=Math.round((tp.subtotal-tp.discountAmt)*(1-dp/100)*(1-df/100));
+    const mensal=mensalRecorr;
+    const totalP=Math.round(mensal*p.months);const eco=Math.round((tp.subtotal*p.months)-totalP);const ft=p.months===6;
+    pCards+='<td style="padding:0 5px;vertical-align:top;width:25%"><div style="background:'+(ft?'#fff5f5':'#f9f9f9')+';border:'+(ft?'2px solid #C72825':'1px solid #e5e5e5')+';border-radius:10px;padding:12px;text-align:center">';
+    pCards+='<div style="font-size:11px;font-weight:700;color:'+(ft?'#C72825':'#888')+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+p.label+'</div>';
+    if(p.months>1){
+      pCards+='<div style="font-size:18px;font-weight:800;color:#111">'+fmt(totalP)+'</div>';
+      pCards+='<div style="font-size:10px;color:#aaa;margin-bottom:4px">total do período</div>';
+      pCards+='<div style="font-size:13px;font-weight:600;color:#555">'+fmt(mensal)+'<span style="font-size:10px;font-weight:400;color:#aaa">/mês</span></div>';
+    } else {
+      pCards+='<div style="font-size:18px;font-weight:800;color:#111">'+fmt(mensalRecorr)+'</div>';
+      pCards+='<div style="font-size:10px;color:#aaa;margin-bottom:4px">/mês</div>';
+    }
+    if(dp>0||df>0){/* percentual não exibido */}
+    else pCards+='<div style="font-size:12px;color:#888">'+(p.note||'')+'</div>';
+    if(eco>0)pCards+='<div style="font-size:11px;color:#2d9e5f;font-weight:600">Economia: '+fmt(eco)+'</div>';
+    pCards+='</div></td>';
+  });
+  const fn=fechamentoAtivo?'<div style="background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#C72825;font-weight:600">✓ Desconto de fechamento na reunião aplicado (+15%)</div>':'';
+  const html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Proposta Over — '+client+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-break{page-break-inside:avoid;break-inside:avoid}}</style>'
+    +'</head><body><div style="max-width:680px;margin:0 auto">'
+    +'<div class="no-break" style="background:#111;padding:48px 40px;text-align:center"><img src="https://i.imgur.com/gEYFUQu.png" style="height:40px;width:auto;margin-bottom:20px"><br>'
+    +'<div style="font-size:11px;color:#C72825;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Proposta Comercial</div>'
+    +'<div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px">'+client+'</div>'
+    +'<div style="width:40px;height:3px;background:#C72825;border-radius:2px;margin:16px auto 0"></div></div>'
+    +'<div style="padding:32px 40px">'
+    +'<div class="no-break"><div style="font-size:12px;font-weight:700;color:#C72825;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Serviços selecionados</div>'
+    +'<div style="font-size:20px;font-weight:700;color:#111;margin-bottom:16px">'+t.count+' serviço'+(t.count>1?'s':'')+' no projeto</div>'
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #f0f0f0">'+sRows+'</table></div>'
+    +'<div class="no-break" style="margin-bottom:28px"><table style="width:100%;border-collapse:collapse">'+tRows+'</table></div>'
+    +'<div class="no-break"><div style="font-size:12px;font-weight:700;color:#C72825;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Opções de prazo</div>'
+    +fn+'<table style="width:100%;border-collapse:collapse;margin-bottom:20px"><tr>'+pCards+'</tr></table></div>'
+    +'<div class="no-break" style="margin-bottom:24px"><div style="background:#f9f9f9;border:.5px solid #e5e5e5;border-radius:10px;padding:16px">'
+    +'<div style="font-size:12px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Formas de pagamento</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<span style="background:#fff;border:.5px solid #ddd;color:#444;font-size:13px;font-weight:600;padding:5px 14px;border-radius:20px">Pix integral</span>'
+    +'<span style="background:#fff;border:.5px solid #ddd;color:#444;font-size:13px;font-weight:600;padding:5px 14px;border-radius:20px">Cartão</span>'
+    +'<span style="background:#fff;border:.5px solid #ddd;color:#444;font-size:13px;font-weight:600;padding:5px 14px;border-radius:20px">Pix + Cartão</span>'
+    +'</div></div></div>'
+    +'<div class="no-break" style="background:#f9f9f9;border-radius:8px;border-left:3px solid #C72825;padding:12px 16px;font-size:13px;color:#555;margin-bottom:10px">Proposta gerada em '+data+' · Over Enterprise Ltda 2026</div>'
+    +(selected['trafego']?'<div class="no-break" style="background:#fff8f0;border-radius:8px;border-left:3px solid #f97316;padding:12px 16px;font-size:13px;color:#555"><b style="color:#f97316">Sugestão de investimento em tráfego:</b> R$ 1.000/mês (budget de mídia, cobrado à parte pela plataforma)</div>':'')
+    +'</div></div><script>window.onload=function(){window.print();}<\/script></body></html>';
+  const printDiv=document.getElementById('print-area');printDiv.innerHTML=html;
+  const style=document.createElement('style');style.id='print-style';
+  style.innerHTML='@media print{body > *:not(#print-area){display:none!important}#print-area{display:block!important}}';
+  document.head.appendChild(style);window.print();
+  setTimeout(function(){printDiv.innerHTML='';const s=document.getElementById('print-style');if(s)s.remove();},1000);
+}
+buildServices();updateCart();
+</script>
+</body>
+</html>
